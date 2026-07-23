@@ -1,0 +1,1500 @@
+/* ============================================================
+   MIAWSEO — Minimal Metro UX
+   Lenguaje de diseño: señalética de metro sobre andén oscuro.
+   Paneles de señal planos (azul=info, verde=acción, rojo=línea),
+   pictogramas en chips, wayfinding con flechas, sans tipo transporte.
+   Tokens en 4 capas: primitivos · semánticos · componente · estado.
+   ============================================================ */
+
+:root {
+  /* --- Capa 1: primitivos --- */
+  /* Concourse / andén oscuro */
+  --c-bg: #0c0f14;
+  --c-surface-1: #161b22;
+  --c-surface-2: #1e2530;
+  --c-surface-3: #273040;
+  /* Tinta y texto */
+  --c-white: #ffffff;
+  --c-text: #f2f4f7;
+  --c-text-2: #c9d0da;
+  --c-muted: #8a93a0;
+  /* Colores de señal (líneas de metro) */
+  --c-blue: #0b57d0;
+  --c-blue-strong: #0a49ac;
+  --c-green: #128a54;
+  --c-green-strong: #0e7346;
+  --c-red: #e11f1a;
+  --c-red-strong: #c11813;
+  --c-yellow: #f2b705;
+  /* Bordes */
+  --c-line: #2a313c;
+  --c-line-strong: #3c4653;
+
+  /* Espacio (escala 4/8) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 7rem;
+
+  /* Tipografía — sans única tipo transporte, sin serif */
+  --font-sans: 'Helvetica Neue', Arial, 'Liberation Sans', 'Segoe UI', Roboto,
+    system-ui, sans-serif;
+  --fs-display: clamp(2.6rem, 7vw, 5.5rem);
+  --fs-h1: clamp(1.9rem, 4vw, 2.9rem);
+  --fs-h2: clamp(1.4rem, 2.6vw, 2rem);
+  --fs-h3: 1.2rem;
+  --fs-body: 1.05rem;
+  --fs-label: 0.78rem;
+  --fs-caption: 0.72rem;
+  --lh-tight: 1.08;
+  --lh-body: 1.6;
+  --track-label: 0.16em;
+  --track-wide: 0.24em;
+
+  /* Radio — Minimal Metro UX usa esquinas RECTAS. El círculo se reserva para
+     el roundel (logo de línea) y las estaciones del progreso. */
+  --r-chip: 0;
+  --r-panel: 0;
+  --r-sm: 0;
+  --r-pill: 999px;
+
+  /* Motion */
+  --motion-fast: 130ms;
+  --motion-base: 240ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* Z */
+  --z-header: 100;
+  --z-overlay: 200;
+  --z-dialog: 300;
+
+  /* Layout */
+  --measure: 62ch;
+  --page-max: 1180px;
+  --header-h: 68px;
+  --edge: 4px; /* grosor del borde de andén (línea roja) */
+
+  /* --- Capa 2: semánticos --- */
+  --surface-0: var(--c-bg);
+  --surface-1: var(--c-surface-1);
+  --surface-2: var(--c-surface-2);
+  --text-strong: var(--c-text);
+  --text: var(--c-text-2);
+  --text-muted: var(--c-muted);
+  --line-color: var(--c-red); /* identidad de línea */
+  --info: var(--c-blue);
+  --go: var(--c-green);
+  --m1: #7c3aed; /* lila metro — color de la Línea 1 (Razas) */
+  --m2: var(--c-blue); /* azul metro — Línea 2 (Historia) */
+  --border: var(--c-line);
+  --border-strong: var(--c-line-strong);
+  --focus: var(--c-yellow);
+}
+
+/* ---------- Reset proporcional ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+a {
+  color: inherit;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-sans);
+  color: var(--text-strong);
+  line-height: var(--lh-tight);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+/* ---------- Accesibilidad ---------- */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 500;
+  background: var(--focus);
+  color: #000;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--r-chip);
+  font-weight: 700;
+}
+.skip-link:focus {
+  left: var(--space-4);
+  top: var(--space-4);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Layout ---------- */
+.container {
+  width: 100%;
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding-inline: var(--space-5);
+}
+.section {
+  padding-block: var(--space-8);
+}
+.section__head {
+  max-width: var(--measure);
+  margin-bottom: var(--space-6);
+}
+.section__head h1,
+.section__head h2 {
+  margin-top: var(--space-3);
+}
+.section__head h2 {
+  font-size: var(--fs-h2);
+}
+/* Helper/intro con estilo señal: cuadrado rojo + icono info (metro) */
+.lead--sign {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.info-sq {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  margin-top: 3px;
+  background: var(--line-color);
+  color: #fff;
+}
+.stack > * + * {
+  margin-top: var(--space-4);
+}
+.lead {
+  font-size: 1.15rem;
+  color: var(--text);
+  max-width: var(--measure);
+}
+.muted {
+  color: var(--text-muted);
+}
+
+/* Etiqueta/eyebrow tipo señal: mayúsculas + tracking */
+.eyebrow,
+.label {
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: var(--track-wide);
+  font-weight: 700;
+  color: var(--line-color);
+  margin: 0;
+}
+
+/* ---------- Identidad: roundel + wordmark ---------- */
+.roundel {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-pill);
+  background: var(--line-color);
+  color: #fff;
+  flex: none;
+}
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: 0.02em;
+  color: var(--text-strong);
+  text-decoration: none;
+}
+
+/* ---------- Borde de andén (línea roja) ---------- */
+.rule-line {
+  height: var(--edge);
+  background: var(--line-color);
+  border: 0;
+  margin: 0;
+  border-radius: var(--r-pill);
+}
+
+/* ---------- Header / nav ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-0) 92%, transparent);
+  backdrop-filter: saturate(120%) blur(8px);
+  border-bottom: var(--edge) solid var(--line-color);
+}
+.site-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.nav {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-chip);
+  border: 1px solid transparent;
+  transition: background var(--motion-fast), color var(--motion-fast),
+    border-color var(--motion-fast);
+}
+.nav a:hover,
+.nav a[aria-current='page'] {
+  color: var(--text-strong);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+.nav a svg {
+  color: var(--text-strong);
+}
+@media (max-width: 600px) {
+  .nav a[data-optional='true'] {
+    display: none;
+  }
+  .nav a span {
+    display: none;
+  }
+}
+
+/* ---------- Chip de icono (pictograma) ---------- */
+.chip {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border: 2px solid currentColor;
+  border-radius: var(--r-chip);
+}
+.chip--sm {
+  width: 34px;
+  height: 34px;
+  border-width: 1.5px;
+}
+
+/* ---------- Botones ---------- */
+.btn {
+  --btn-bg: transparent;
+  --btn-fg: var(--text-strong);
+  --btn-border: var(--border-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 50px;
+  padding: var(--space-3) var(--space-5);
+  font: inherit;
+  font-weight: 700;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border: 2px solid var(--btn-border);
+  border-radius: var(--r-chip);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    transform var(--motion-fast) var(--ease);
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: translateY(0);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn--primary {
+  --btn-bg: var(--info);
+  --btn-fg: #fff;
+  --btn-border: var(--info);
+}
+.btn--primary:hover {
+  --btn-bg: var(--c-blue-strong);
+  --btn-border: var(--c-blue-strong);
+}
+.btn--go {
+  --btn-bg: var(--go);
+  --btn-fg: #fff;
+  --btn-border: var(--go);
+}
+.btn--go:hover {
+  --btn-bg: var(--c-green-strong);
+  --btn-border: var(--c-green-strong);
+}
+.btn--ghost {
+  --btn-bg: var(--surface-1);
+  --btn-fg: var(--text-strong);
+  --btn-border: var(--border-strong);
+}
+.btn--ghost:hover {
+  --btn-border: var(--line-color);
+}
+
+/* ---------- Señal de wayfinding (sign) ---------- */
+/* Panel grande estilo cartel de metro: [chip(s)] etiqueta ... [flecha] */
+.wayfind {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--r-panel);
+  text-decoration: none;
+  color: #fff;
+  border: 2px solid transparent;
+  transition: transform var(--motion-base) var(--ease),
+    filter var(--motion-fast) var(--ease);
+}
+.wayfind:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+.wayfind--blue {
+  background: var(--info);
+}
+.wayfind--m1 {
+  background: var(--m1);
+}
+.wayfind--green {
+  background: var(--go);
+}
+.wayfind--ink {
+  background: var(--surface-1);
+  border-color: var(--border-strong);
+}
+.wayfind__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.wayfind__title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.wayfind__sub {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.wayfind__arrow {
+  flex: none;
+  opacity: 0.95;
+}
+
+/* ---------- Hero (entrada de estación) ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: calc(92dvh - var(--header-h));
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding-block: var(--space-8);
+  background: radial-gradient(
+      120% 90% at 50% -10%,
+      color-mix(in srgb, var(--info) 16%, transparent),
+      transparent 60%
+    ),
+    var(--surface-0);
+}
+/* Capa de imagen "mesh": la foto se funde en el andén oscuro con máscara radial. */
+.hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-size: cover;
+  background-position: center 30%;
+  opacity: 0.42;
+  -webkit-mask-image: radial-gradient(
+    115% 95% at 50% 22%,
+    #000 0%,
+    rgba(0, 0, 0, 0.55) 42%,
+    transparent 74%
+  );
+  mask-image: radial-gradient(
+    115% 95% at 50% 22%,
+    #000 0%,
+    rgba(0, 0, 0, 0.55) 42%,
+    transparent 74%
+  );
+}
+/* Velo que baja hasta el fondo del andén para asegurar contraste del texto. */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--surface-0) 35%, transparent) 0%,
+    color-mix(in srgb, var(--surface-0) 62%, transparent) 55%,
+    var(--surface-0) 100%
+  );
+}
+.hero__inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 720px;
+  padding-inline: var(--space-5);
+}
+.hero .roundel {
+  width: 64px;
+  height: 64px;
+  margin-inline: auto;
+}
+.hero h1 {
+  font-size: var(--fs-display);
+  margin-block: var(--space-4) var(--space-3);
+  letter-spacing: -0.02em;
+}
+.hero .lead {
+  margin-inline: auto;
+}
+.hero .signs {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+  text-align: left;
+}
+@media (min-width: 720px) {
+  .hero .signs {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---------- Ruta / breadcrumb ---------- */
+.ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding-block: var(--space-5);
+}
+.ribbon a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: var(--text);
+}
+.ribbon a:hover {
+  color: var(--line-color);
+}
+.ribbon .sep {
+  color: var(--border-strong);
+}
+
+/* ---------- Grid de estaciones (michiteca) ---------- */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-5);
+}
+
+/* Rail horizontal de estaciones (michiteca): scroll lateral con snap */
+.stations-rail {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--space-5);
+  padding-bottom: var(--space-4);
+  /* saca el rail al ancho completo del viewport para que se sienta una línea */
+  margin-inline: calc(var(--space-5) * -1);
+  padding-inline: var(--space-5);
+}
+.stations-rail > * {
+  flex: 0 0 clamp(230px, 72vw, 290px);
+  scroll-snap-align: start;
+}
+.stations-rail::-webkit-scrollbar {
+  height: 8px;
+}
+.stations-rail::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+.stations-rail::-webkit-scrollbar-track {
+  background: var(--surface-1);
+}
+.rail-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* ---------- Líneas de metro (M1/M2/M3) ---------- */
+.line-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-8) 0 var(--space-4);
+}
+.line-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+}
+.line-name {
+  font-size: var(--fs-h2);
+  margin: 0;
+}
+.line-desc {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.line-badge--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 0.8rem;
+}
+
+/* Indicador de posición de línea (inicio/fin/estación N) */
+.line-pos {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* Botón de navegación entre estaciones: nombre + kicker (jerarquía menor) */
+.btn--nav {
+  align-items: center;
+  text-align: left;
+}
+/* Botón inactivo: terminal de línea (inicio/fin), solo para llenar el hueco */
+.btn--nav-off {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+  border-style: dashed;
+}
+.btn--nav-off:hover {
+  transform: none;
+}
+.btn--nav__lbl {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.btn--nav-end .btn--nav__lbl {
+  align-items: flex-end;
+  text-align: right;
+}
+.btn--nav__kicker {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+.btn--nav__name {
+  font-weight: 700;
+}
+
+/* M2 — rail histórico compacto (estaciones en una línea azul) */
+.hist-rail {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--space-5);
+  padding-bottom: var(--space-4);
+  padding-top: var(--space-4);
+  /* homologado con .stations-rail: sangra al ancho del viewport */
+  margin-inline: calc(var(--space-5) * -1);
+  padding-inline: var(--space-5);
+}
+.hist-rail::-webkit-scrollbar {
+  height: 8px;
+}
+.hist-rail::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+.hist-rail::-webkit-scrollbar-track {
+  background: var(--surface-1);
+}
+.hist-card {
+  position: relative;
+  flex: 0 0 clamp(220px, 64vw, 260px);
+  scroll-snap-align: start;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--info);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease);
+}
+.hist-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--info);
+}
+/* Punto de estación sobre la línea azul */
+.hist-stop {
+  position: absolute;
+  top: -8px;
+  left: var(--space-4);
+  width: 13px;
+  height: 13px;
+  border-radius: var(--r-pill);
+  background: var(--surface-0);
+  border: 3px solid var(--info);
+}
+.hist-thumb {
+  display: block;
+  aspect-ratio: 16 / 10;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.hist-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.hist-ph {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--info);
+}
+.hist-date {
+  color: var(--info);
+  font-weight: 700;
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.hist-title {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.hist-body {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  flex: 1;
+}
+.hist-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--info);
+  font-weight: 700;
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+/* Placeholder de galería cuando falta imagen */
+.gallery-ph {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: color-mix(in srgb, var(--info) 22%, var(--surface-1));
+  color: #fff;
+}
+
+/* M3 — en construcción */
+.construction {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  border: 2px dashed var(--border-strong);
+  border-top: 3px solid var(--c-yellow);
+  padding: var(--space-6) var(--space-5);
+  color: var(--text-muted);
+}
+.construction .info-sq {
+  background: var(--c-yellow);
+  color: #000;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+}
+.construction strong {
+  color: var(--text-strong);
+}
+.station-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-panel);
+  /* overflow visible para que el punto de estación no se recorte;
+     la imagen se recorta en .station-card__art. */
+  overflow: visible;
+  text-decoration: none;
+  color: inherit;
+  transition: transform var(--motion-base) var(--ease),
+    border-color var(--motion-base) var(--ease);
+}
+.station-card:hover,
+.station-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--m1);
+}
+.station-card__linebar {
+  height: 4px;
+  width: 100%;
+}
+/* Punto de estación sobre la línea (igual que las tarjetas M2) */
+.station-card__dot {
+  position: absolute;
+  top: 2px;
+  left: var(--space-4);
+  width: 13px;
+  height: 13px;
+  border-radius: var(--r-pill);
+  background: var(--surface-0);
+  border: 3px solid var(--m1);
+  transform: translateY(-50%);
+  z-index: 2;
+}
+/* Terminal de línea (inicio / fin) sobre la primera y última estación.
+   Pequeño para no tapar el contenido; color por línea vía inline style. */
+.line-terminus {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 3;
+  background: var(--m1);
+  color: #fff;
+  font-size: 0.56rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  line-height: 1.3;
+}
+.station-card__art {
+  aspect-ratio: 4 / 5;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.station-card__art > *,
+.station-card__art img,
+.station-card__art svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.station-card__body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+.station-card__body .txt {
+  flex: 1;
+  min-width: 0;
+}
+.station-card__name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.station-card__meta {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.station-card__arrow {
+  color: var(--text-muted);
+  flex: none;
+}
+.station-card:hover .station-card__arrow,
+.station-card:focus-visible .station-card__arrow {
+  color: var(--m1);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: #fff;
+  background: var(--go);
+  border-radius: 0;
+  padding: 3px var(--space-3);
+}
+
+/* ---------- Buscador ---------- */
+.search {
+  position: relative;
+  max-width: 520px;
+}
+.search svg {
+  position: absolute;
+  left: var(--space-4);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.search .input {
+  padding-left: calc(var(--space-4) * 2 + 24px);
+}
+.input,
+.textarea,
+.file {
+  width: 100%;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--surface-1);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-chip);
+  padding: var(--space-3) var(--space-4);
+}
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--text-muted);
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.field > label {
+  font-size: var(--fs-label);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-weight: 700;
+  color: var(--text);
+}
+.field .hint {
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+/* ---------- Exposición = tablero de andén ---------- */
+.expo {
+  display: grid;
+  /* Columna del arte fija al ancho del póster (alineado a la izquierda);
+     el carrusel ocupa el resto. minmax(0,…) evita overflow horizontal. */
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: var(--space-7);
+  align-items: start;
+  min-height: 58vh;
+}
+@media (max-width: 860px) {
+  .expo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+}
+.platform {
+  min-width: 0;
+}
+.expo__art {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  overflow: hidden;
+  width: 100%;
+  padding: 0;
+}
+@media (max-width: 860px) {
+  .expo__art {
+    max-width: 440px;
+    margin-inline: auto;
+  }
+}
+/* El marco se adapta a la proporción natural de la imagen: se ve completa,
+   sin recorte y sin letterbox excesivo. */
+.expo__art > * {
+  width: 100%;
+  display: block;
+}
+.expo__art img {
+  width: 100%;
+  height: auto;
+  max-height: 74vh;
+  object-fit: contain;
+  display: block;
+  margin-inline: auto;
+}
+.expo__art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.expo__art .gallery-ph {
+  aspect-ratio: 3 / 2;
+  height: auto;
+}
+/* Panel de información del andén. Base = M1 (lila); modificador --m2 = azul. */
+.info-panel {
+  background: var(--m1);
+  color: #fff;
+  border-radius: var(--r-panel);
+  padding: var(--space-6);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.info-panel .platform-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 0;
+  padding: 4px var(--space-3);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.info-panel h2 {
+  color: #fff;
+  font-size: var(--fs-h1);
+}
+.info-panel p {
+  max-width: var(--measure);
+  color: rgba(255, 255, 255, 0.92);
+}
+.info-panel .expo__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.info-panel .expo__stats div {
+  border-left: 3px solid rgba(255, 255, 255, 0.6);
+  padding-left: var(--space-3);
+}
+.info-panel .expo__stats dt {
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: rgba(255, 255, 255, 0.8);
+}
+.info-panel .expo__stats dd {
+  margin: 0;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Contador de dueños */
+.owner-count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  color: var(--text);
+}
+.owner-count .chip {
+  color: var(--line-color);
+}
+.owner-count strong {
+  color: var(--text-strong);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+/* Rail de michis de la comunidad (fotos): scroll lateral con snap */
+.michi-rail {
+  display: flex;
+  gap: var(--space-4);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--space-3);
+  margin-top: var(--space-2);
+}
+.michi-rail figure {
+  flex: 0 0 clamp(150px, 44vw, 190px);
+  scroll-snap-align: start;
+  margin: 0;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.michi-rail img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  display: block;
+}
+.michi-rail figcaption {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Carrusel de andenes: cada deslizamiento horizontal = una sala */
+.track {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.track::-webkit-scrollbar {
+  display: none;
+}
+.slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Galería M2: cada slide (imagen + info) es deslizable en conjunto */
+.gtrack {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.gtrack::-webkit-scrollbar {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .gtrack {
+    scroll-behavior: auto;
+  }
+}
+.gslide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .gslide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .gslide .expo__art {
+    max-width: 440px;
+    margin-inline: auto;
+  }
+}
+/* Galería: marco de foto de TAMAÑO FIJO (4/3) para que todas las diapositivas
+   se vean iguales; la foto se muestra completa (contain), sin recorte. El panel
+   de info también con altura uniforme. */
+.gslide .expo__art {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+}
+.gslide .expo__art img {
+  height: 100%;
+}
+.gslide .expo__art .gallery-ph {
+  height: 100%;
+  aspect-ratio: auto;
+}
+.gslide .info-panel {
+  min-height: 320px;
+}
+
+/* Fila de navegación entre estaciones (prev | next en una misma línea) */
+.station-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.station-nav .btn {
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    scroll-behavior: auto;
+  }
+}
+
+.expo__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+.arrow-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  background: var(--surface-1);
+  color: var(--text-strong);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-chip);
+  cursor: pointer;
+  transition: border-color var(--motion-fast), transform var(--motion-fast);
+}
+.arrow-btn:hover {
+  border-color: var(--line-color);
+  transform: translateY(-1px);
+}
+.arrow-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+/* Progreso de línea (estaciones/diapositivas) */
+.line-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.line-progress .stop {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--border-strong);
+  background: var(--surface-0);
+  cursor: pointer;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+.line-progress .stop + .stop {
+  margin-left: 18px;
+}
+.line-progress .stop + .stop::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: 18px;
+  height: 2px;
+  background: var(--border-strong);
+  transform: translateY(-50%);
+}
+.line-progress .stop[aria-current='true'] {
+  background: var(--m1);
+  border-color: var(--m1);
+}
+/* Galería M2: panel e indicadores en azul */
+.info-panel--m2 {
+  background: var(--m2);
+}
+.line-progress--m2 .stop[aria-current='true'] {
+  background: var(--m2);
+  border-color: var(--m2);
+}
+
+/* ---------- Ficha rápida (paneles de datos) ---------- */
+.quickfacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin-top: var(--space-5);
+}
+.quickfacts li {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--m1);
+  border-radius: var(--r-chip);
+  padding: var(--space-4);
+}
+.quickfacts .k {
+  font-size: var(--fs-caption);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--text-muted);
+}
+.quickfacts .v {
+  color: var(--text-strong);
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+
+/* ---------- Dialog / modal ---------- */
+dialog.modal {
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-panel);
+  background: var(--surface-1);
+  color: var(--text);
+  padding: 0;
+  max-width: 520px;
+  width: calc(100% - var(--space-6));
+}
+dialog.modal::backdrop {
+  background: rgba(0, 0, 0, 0.66);
+}
+.modal__head {
+  padding: var(--space-5) var(--space-5) 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+.modal__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--fs-h3);
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.modal__body {
+  padding: var(--space-5);
+}
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  background: transparent;
+  border: 2px solid var(--border);
+  color: var(--text);
+  border-radius: var(--r-chip);
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+.icon-btn:hover {
+  border-color: var(--line-color);
+}
+
+/* Honeypot */
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ---------- Avisos ---------- */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-chip);
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.95rem;
+}
+.notice--ok {
+  border-color: var(--go);
+  color: #fff;
+  background: color-mix(in srgb, var(--go) 22%, var(--surface-1));
+}
+.notice--err {
+  border-color: var(--line-color);
+  color: #fff;
+  background: color-mix(in srgb, var(--line-color) 20%, var(--surface-1));
+}
+.notice--info {
+  color: var(--text);
+}
+
+/* ---------- Michi Plaza (muro) ---------- */
+.wall {
+  columns: 3 240px;
+  column-gap: var(--space-4);
+}
+@media (max-width: 640px) {
+  .wall {
+    columns: 2 150px;
+  }
+}
+.wall figure {
+  break-inside: avoid;
+  margin: 0 0 var(--space-4);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-chip);
+  overflow: hidden;
+}
+.wall figcaption {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.9rem;
+}
+.wall .cap-name {
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.wall .cap-note {
+  color: var(--text-muted);
+  font-size: var(--fs-caption);
+}
+
+/* ---------- Estado vacío ---------- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--r-panel);
+  padding: var(--space-7) var(--space-5);
+  text-align: center;
+  color: var(--text-muted);
+}
+/* Solo el icono directo (cámara) va atenuado; los iconos de botones no. */
+.empty-state > svg {
+  color: var(--border-strong);
+}
+
+/* ---------- Moderación ---------- */
+.mod-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+.mod-card {
+  border: 1px solid var(--border);
+  border-radius: var(--r-chip);
+  overflow: hidden;
+  background: var(--surface-1);
+}
+.mod-card .actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  border-top: var(--edge) solid var(--line-color);
+  margin-top: var(--space-9);
+  padding-block: var(--space-6);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.site-footer .container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5) var(--space-6);
+  justify-content: space-between;
+}
+.site-footer a {
+  color: var(--text);
+  text-decoration: none;
+}
+.site-footer a:hover {
+  color: var(--line-color);
+}
+
+/* Utilidad: fila de acciones */
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
