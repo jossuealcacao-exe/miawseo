@@ -111,8 +111,22 @@ npm run typecheck && npm run lint && npm run build
 - [ ] Considerar `usuarios/roles` para moderación y un pre-filtro de contenido.
 - [ ] Backups de los datos de usuarios.
 
-Recomendado: hosting con Node (Vercel/Node server). Las fichas de raza e historia
-son SSG; Michiteca/Michi Plaza y las APIs son dinámicas (Node runtime).
+### Desplegar en Railway o Render (disco persistente)
+
+Las subidas y la cola de moderación viven en el filesystem (`DATA_DIR`), así que
+producción necesita un **volumen persistente** (no sirve serverless efímero). El
+repo incluye config lista para ambos:
+
+- **Railway** (`railway.json`): New Project → Deploy from GitHub → `miawseo`.
+  1. Crea un **Volume** y móntalo en `/data`.
+  2. Variables: `DATA_DIR=/data`, `ADMIN_TOKEN=<token largo>` (obligatoria);
+     opcionales `UPLOAD_RATE_MAX`, `UPLOAD_RATE_WINDOW_MS`.
+  3. Railway inyecta `PORT`; `npm run start` (`next start`) lo respeta.
+- **Render** (`render.yaml`): New → Blueprint → conecta el repo. Ya define el
+  disco en `/data`, `DATA_DIR` y genera `ADMIN_TOKEN` automáticamente.
+
+Las fichas de raza e historia son SSG; Michiteca/Michi Plaza y las APIs son
+dinámicas (Node runtime), por eso el host debe correr Node con `next start`.
 
 Sistema visual reutilizable documentado en
 [DESIGN_MINIMAL_METRO.md](DESIGN_MINIMAL_METRO.md) y, a nivel de SO, en

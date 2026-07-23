@@ -1,0 +1,28 @@
+# Render Blueprint — Miawseo (Next.js con disco persistente)
+# Despliegue: Render → New → Blueprint → conecta el repo. Render lee este archivo.
+# El volumen persistente en /data conserva las subidas y la cola de moderacion.
+services:
+  - type: web
+    name: miawseo
+    runtime: node
+    plan: starter # tiene disco persistente; free NO conserva disco
+    region: oregon
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATA_DIR
+        value: /data
+      - key: ADMIN_TOKEN
+        generateValue: true # Render genera un valor seguro; nunca queda en el repo
+      - key: UPLOAD_RATE_MAX
+        value: "5"
+      - key: UPLOAD_RATE_WINDOW_MS
+        value: "600000"
+    disk:
+      name: miawseo-data
+      mountPath: /data
+      sizeGB: 1

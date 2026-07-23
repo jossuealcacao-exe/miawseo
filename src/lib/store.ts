@@ -12,9 +12,15 @@ import type { Photo, PhotoStatus } from '@/lib/types';
  * demo con volumen bajo. Para produccion con concurrencia real conviene una BD
  * (SQLite/Postgres) y almacenamiento de objetos. La escritura usa un archivo
  * temporal + rename para minimizar corrupcion, pero no es transaccional.
+ *
+ * DESPLIEGUE: en produccion define DATA_DIR apuntando a un volumen persistente
+ * (p. ej. DATA_DIR=/data en Railway/Render). Si no se define, cae al .data local
+ * del proyecto, util en desarrollo.
  */
 
-const DATA_DIR = path.join(process.cwd(), '.data');
+const DATA_DIR = process.env.DATA_DIR
+  ? path.resolve(process.env.DATA_DIR)
+  : path.join(process.cwd(), '.data');
 const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const DB_FILE = path.join(DATA_DIR, 'photos.json');
 
