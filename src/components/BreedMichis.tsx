@@ -3,20 +3,13 @@
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/Icon';
 import { UploadDialog } from '@/components/UploadDialog';
-
-interface MichiPhoto {
-  id: string;
-  catName: string;
-  note: string;
-  file: string;
-  width: number;
-  height: number;
-}
+import { MichiGrid } from '@/components/MichiGrid';
+import type { MichiPhotoView } from '@/lib/types';
 
 /**
- * Contador de dueños de la raza + carrusel de los primeros 6 michis subidos
- * (aprobados) a la Michi Plaza. Se hidrata en cliente para no romper el SSG de la
- * ficha de raza.
+ * Contador de dueños de la raza + grid de los primeros michis subidos
+ * (aprobados) a la Michi Plaza, con lightbox y corazones. Se hidrata en cliente
+ * para no romper el SSG de la ficha de raza.
  */
 export function BreedMichis({
   breedSlug,
@@ -26,14 +19,14 @@ export function BreedMichis({
   breedName: string;
 }) {
   const [count, setCount] = useState<number | null>(null);
-  const [photos, setPhotos] = useState<MichiPhoto[]>([]);
-  const [limit, setLimit] = useState(6);
+  const [photos, setPhotos] = useState<MichiPhotoView[]>([]);
+  const [limit, setLimit] = useState(12);
 
   useEffect(() => {
     let live = true;
     fetch(`/api/photos?breed=${encodeURIComponent(breedSlug)}`)
       .then((r) => r.json())
-      .then((d: { ok?: boolean; count?: number; limit?: number; photos?: MichiPhoto[] }) => {
+      .then((d: { ok?: boolean; count?: number; limit?: number; photos?: MichiPhotoView[] }) => {
         if (!live || !d.ok) return;
         setCount(d.count ?? 0);
         setPhotos(d.photos ?? []);
@@ -77,30 +70,9 @@ export function BreedMichis({
           </div>
         </div>
       ) : (
-        <>
-          <div className="rail-hint" style={{ marginTop: 'var(--space-4)' }}>
-            Desliza
-            <Icon name="arrow" size={16} />
-          </div>
-          <div className="michi-rail">
-            {photos.map((p) => (
-              <figure key={p.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/media/${p.file}`}
-                  alt={`Gato ${breedName} llamado ${p.catName}`}
-                  width={p.width}
-                  height={p.height}
-                  loading="lazy"
-                />
-                <figcaption>
-                  <span className="cap-name">{p.catName}</span>
-                  {p.note ? <span className="cap-note">{p.note}</span> : null}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </>
+        <div style={{ marginTop: 'var(--space-4)' }}>
+          <MichiGrid photos={photos} />
+        </div>
       )}
     </section>
   );

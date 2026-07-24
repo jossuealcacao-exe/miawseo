@@ -1,22 +1,34 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BREEDS } from '@/data/breeds';
-import { BreedPhoto } from '@/components/BreedPhoto';
+import { getBreed } from '@/data/breeds';
 import { Icon } from '@/components/Icon';
 import { Lead } from '@/components/Lead';
-import { approvedCountByBreed } from '@/lib/store';
+import { PhotoWall } from '@/components/PhotoWall';
+import { listPhotos } from '@/lib/store';
+import type { MichiPhotoView } from '@/lib/types';
 
 export const metadata: Metadata = {
   title: 'Michi Plaza — El muro de los michis',
   description:
-    'La Michi Plaza es la galería pública de gatos reales de la comunidad Miawseo, organizada por raza. Cada foto pasa por moderación.',
+    'La Michi Plaza es el muro público de gatos reales de la comunidad Miawseo. Explora las fotos, filtra por raza y reacciona con un corazón. Cada foto pasa por moderación.',
 };
 
 export const dynamic = 'force-dynamic';
 
 export default async function MichiPlazaPage() {
-  const counts = await approvedCountByBreed();
-  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const approved = await listPhotos({ status: 'approved' });
+  const photos: MichiPhotoView[] = approved.map((p) => ({
+    id: p.id,
+    file: p.file,
+    catName: p.catName,
+    note: p.note,
+    hearts: p.hearts,
+    breedSlug: p.breedSlug,
+    breedName: getBreed(p.breedSlug)?.name ?? p.breedSlug,
+    width: p.width,
+    height: p.height,
+  }));
+  const total = photos.length;
 
   return (
     <div className="container">
@@ -35,48 +47,27 @@ export default async function MichiPlazaPage() {
         <p className="eyebrow">Muro de la comunidad</p>
         <h1>La Michi Plaza</h1>
         <Lead>
-          Aquí viven los michis reales de la comunidad, organizados por raza.
+          El muro de los michis reales de la comunidad.
           {total > 0
-            ? ` ${total} ${total === 1 ? 'foto aprobada' : 'fotos aprobadas'} hasta ahora.`
+            ? ` ${total} ${total === 1 ? 'foto' : 'fotos'} en exhibición. Filtra por raza y deja un corazón a tu favorito.`
             : ' Aún no hay fotos aprobadas — ¡sé el primero en colgar la tuya!'}
         </Lead>
       </div>
 
-      <div className="rail-hint">
-        Desliza para recorrer las razas
-        <Icon name="arrow" size={16} />
-      </div>
-      <div className="stations-rail">
-        {BREEDS.map((b) => (
-          <Link key={b.slug} className="station-card" href={`/michi-plaza/${b.slug}`}>
-            <span
-              className="station-card__linebar"
-              style={{ background: 'var(--m1)' }}
-              aria-hidden="true"
-            />
-            <span className="station-card__dot" aria-hidden="true" />
-            <div className="station-card__art">
-              <BreedPhoto breed={b} />
-            </div>
-            <div className="station-card__body">
-              <span className="txt">
-                <span className="station-card__name">{b.name}</span>
-                <span className="station-card__meta" style={{ display: 'block' }}>
-                  {counts[b.slug]
-                    ? `${counts[b.slug]} ${counts[b.slug] === 1 ? 'michi' : 'michis'}`
-                    : 'Sin fotos aún'}
-                </span>
-              </span>
-              <Icon name="arrow" size={22} className="station-card__arrow" />
-            </div>
-          </Link>
-        ))}
-      </div>
+      {total === 0 ? (
+        <div className="empty-state">
+          <Icon name="camera" size={32} />
+          Todavía no hay michis en el muro. Sube el tuyo desde la ficha de su raza
+          en la Michiteca; tras moderación aparecerá aquí.
+        </div>
+      ) : (
+        <PhotoWall photos={photos} />
+      )}
 
       <div className="actions" style={{ marginTop: '3rem' }}>
         <Link className="btn btn--primary" href="/michiteca">
           <Icon name="michiteca" size={24} />
-          Ir a la Michiteca para subir mi michi
+          Subir mi michi en la Michiteca
         </Link>
         <Link className="btn btn--ghost" href="/">
           <Icon name="home" size={18} />

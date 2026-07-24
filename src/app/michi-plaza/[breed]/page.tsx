@@ -5,7 +5,9 @@ import { notFound } from 'next/navigation';
 import { getBreed } from '@/data/breeds';
 import { listPhotos } from '@/lib/store';
 import { UploadDialog } from '@/components/UploadDialog';
+import { PhotoWall } from '@/components/PhotoWall';
 import { Icon } from '@/components/Icon';
+import type { MichiPhotoView } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +21,7 @@ export async function generateMetadata({
   if (!data) return { title: 'Raza no encontrada' };
   return {
     title: `${data.name} en la Michi Plaza`,
-    description: `Galería pública de gatos ${data.name} compartidos por la comunidad Miawseo.`,
+    description: `Muro público de gatos ${data.name} compartidos por la comunidad Miawseo.`,
   };
 }
 
@@ -32,7 +34,19 @@ export default async function MichiPlazaBreedPage({
   const data = getBreed(breed);
   if (!data) notFound();
 
-  const photos = await listPhotos({ status: 'approved', breedSlug: data.slug });
+  const approved = await listPhotos({ status: 'approved' });
+  const photos: MichiPhotoView[] = approved.map((p) => ({
+    id: p.id,
+    file: p.file,
+    catName: p.catName,
+    note: p.note,
+    hearts: p.hearts,
+    breedSlug: p.breedSlug,
+    breedName: getBreed(p.breedSlug)?.name ?? p.breedSlug,
+    width: p.width,
+    height: p.height,
+  }));
+  const own = photos.filter((p) => p.breedSlug === data.slug).length;
 
   return (
     <div className="container" style={{ '--line-color': 'var(--m1)' } as CSSProperties}>
@@ -55,9 +69,9 @@ export default async function MichiPlazaBreedPage({
         <p className="eyebrow">Michi Plaza · {data.origin}</p>
         <h1 style={{ fontSize: 'var(--fs-h1)' }}>Michis {data.name}</h1>
         <p className="lead">
-          {photos.length > 0
-            ? `${photos.length} ${photos.length === 1 ? 'michi aprobado' : 'michis aprobados'} de la comunidad.`
-            : 'Todavía no hay michis de esta raza. ¡Estrena el muro!'}
+          {own > 0
+            ? `${own} ${own === 1 ? 'michi' : 'michis'} de esta raza en el muro. Filtra o explora el resto de la comunidad.`
+            : 'Todavía no hay michis de esta raza. ¡Estrena el muro subiendo el tuyo!'}
         </p>
       </div>
 
@@ -72,36 +86,11 @@ export default async function MichiPlazaBreedPage({
       {photos.length === 0 ? (
         <div className="empty-state">
           <Icon name="camera" size={32} />
-          Aún no hay fotos aprobadas de {data.name}. Sube la de tu michi: tras
-          pasar por moderación aparecerá aquí.
+          Aún no hay fotos aprobadas. Sube la de tu michi: tras pasar por
+          moderación aparecerá aquí.
         </div>
       ) : (
-        <>
-          {photos.length > 1 && (
-            <div className="rail-hint">
-              Desliza
-              <Icon name="arrow" size={16} />
-            </div>
-          )}
-          <div className="michi-rail">
-            {photos.map((p) => (
-              <figure key={p.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/api/media/${p.file}`}
-                  alt={`Gato ${data.name} llamado ${p.catName}`}
-                  width={p.width}
-                  height={p.height}
-                  loading="lazy"
-                />
-                <figcaption>
-                  <span className="cap-name">{p.catName}</span>
-                  {p.note ? <span className="cap-note">{p.note}</span> : null}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </>
+        <PhotoWall photos={photos} initialBreed={data.slug} />
       )}
 
       <div className="actions" style={{ marginTop: '3rem' }}>

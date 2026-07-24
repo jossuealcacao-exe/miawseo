@@ -89,6 +89,7 @@
   --line-color: var(--c-red); /* identidad de línea */
   --info: var(--c-blue);
   --go: var(--c-green);
+  --heart: #ff4d6d; /* reacción de corazón (constante, no depende de la línea) */
   --m1: #7c3aed; /* lila metro — color de la Línea 1 (Razas) */
   --m2: var(--c-blue); /* azul metro — Línea 2 (Historia) */
   --border: var(--c-line);
@@ -1135,6 +1136,306 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* ============================================================
+   Muro de la comunidad: grid uniforme + lightbox + corazones
+   ============================================================ */
+
+/* Filtro de razas (Michi Plaza) */
+.plaza-filter {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-5);
+  scrollbar-width: thin;
+}
+.plaza-filter::-webkit-scrollbar {
+  height: 6px;
+}
+.plaza-filter::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+.filter-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.5rem 0.85rem;
+  font-family: inherit;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--r-chip);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--motion-fast) var(--ease),
+    background var(--motion-fast) var(--ease), color var(--motion-fast) var(--ease);
+}
+.filter-chip:hover {
+  border-color: var(--border-strong);
+}
+.filter-chip.is-active {
+  background: var(--m1);
+  border-color: var(--m1);
+  color: #fff;
+}
+.filter-chip__count {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  opacity: 0.8;
+}
+.filter-chip.is-active .filter-chip__count {
+  opacity: 1;
+}
+
+/* Grid de miniaturas cuadradas y uniformes */
+.michi-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+@media (min-width: 560px) {
+  .michi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (min-width: 860px) {
+  .michi-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.michi-cell {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--motion-fast) var(--ease);
+}
+.michi-cell:hover,
+.michi-cell:focus-visible {
+  border-color: var(--m1);
+}
+.michi-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--motion-base) var(--ease);
+}
+.michi-cell:hover img,
+.michi-cell:focus-visible img {
+  transform: scale(1.05);
+}
+.michi-cell__overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  text-align: left;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), transparent);
+}
+.michi-cell__name {
+  color: #fff;
+  font-weight: 700;
+  font-size: var(--fs-label);
+  line-height: 1.2;
+}
+.michi-cell__breed {
+  color: var(--c-text-2);
+  font-size: var(--fs-caption);
+}
+.michi-cell__hearts {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px 2px 5px;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+.michi-cell__hearts svg {
+  color: var(--heart);
+}
+
+/* Botón de corazón (reacción) */
+.heart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.5rem 0.9rem;
+  font-family: inherit;
+  font-weight: 700;
+  color: var(--text-strong);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: border-color var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+}
+.heart-btn svg {
+  color: var(--text-muted);
+  transition: color var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
+}
+.heart-btn:hover {
+  border-color: var(--heart);
+}
+.heart-btn:hover svg {
+  color: var(--heart);
+}
+.heart-btn.is-active {
+  border-color: var(--heart);
+  color: var(--heart);
+}
+.heart-btn.is-active svg {
+  color: var(--heart);
+  transform: scale(1.1);
+}
+.heart-btn--lg {
+  font-size: 1.05rem;
+  padding: 0.6rem 1.1rem;
+}
+.heart-btn__count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lightbox (visor modal) */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(6, 8, 12, 0.9);
+  backdrop-filter: blur(4px);
+  animation: lb-fade var(--motion-base) var(--ease);
+}
+@keyframes lb-fade {
+  from {
+    opacity: 0;
+  }
+}
+.lightbox__panel {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: min(920px, 100%);
+  max-height: 100%;
+  width: 100%;
+  background: var(--surface-1);
+  border: 1px solid var(--border-strong);
+}
+.lightbox__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.lightbox__img {
+  max-width: 100%;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+.lightbox__info {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border);
+}
+.lightbox__meta {
+  min-width: 0;
+}
+.lightbox__name {
+  display: block;
+  color: var(--text-strong);
+  font-weight: 800;
+  font-size: var(--fs-h3);
+}
+.lightbox__breed {
+  display: block;
+  color: var(--m1);
+  font-size: var(--fs-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+}
+.lightbox__note {
+  margin: var(--space-2) 0 0;
+  color: var(--text);
+  font-size: var(--fs-body);
+}
+.lightbox__close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+}
+.lightbox__close:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+.lightbox__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  z-index: 1;
+}
+.lightbox__nav:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+.lightbox__nav--prev {
+  left: var(--space-4);
+}
+.lightbox__nav--next {
+  right: var(--space-4);
+}
+@media (min-width: 720px) {
+  .lightbox__img {
+    max-height: 78vh;
+  }
 }
 
 /* Carrusel de andenes: cada deslizamiento horizontal = una sala */

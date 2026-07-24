@@ -21,25 +21,29 @@ export interface RateResult {
   retryAfterMs: number;
 }
 
-export function rateLimit(key: string): RateResult {
+export function rateLimit(
+  key: string,
+  max: number = MAX,
+  windowMs: number = WINDOW_MS,
+): RateResult {
   const now = Date.now();
   const bucket = buckets.get(key) ?? { hits: [] };
   // Descarta hits fuera de la ventana.
-  bucket.hits = bucket.hits.filter((t) => now - t < WINDOW_MS);
+  bucket.hits = bucket.hits.filter((t) => now - t < windowMs);
 
-  if (bucket.hits.length >= MAX) {
+  if (bucket.hits.length >= max) {
     const oldest = bucket.hits[0] ?? now;
     buckets.set(key, bucket);
     return {
       allowed: false,
       remaining: 0,
-      retryAfterMs: Math.max(0, WINDOW_MS - (now - oldest)),
+      retryAfterMs: Math.max(0, windowMs - (now - oldest)),
     };
   }
 
   bucket.hits.push(now);
   buckets.set(key, bucket);
-  return { allowed: true, remaining: MAX - bucket.hits.length, retryAfterMs: 0 };
+  return { allowed: true, remaining: max - bucket.hits.length, retryAfterMs: 0 };
 }
 
 /** Extrae una IP aproximada de la request para usar como clave. */

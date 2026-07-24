@@ -54,5 +54,20 @@ export interface Photo {
   width: number;
   height: number;
   status: PhotoStatus;
+  /** Corazones acumulados de la comunidad. */
+  hearts: number;
   createdAt: string;
+}
+
+/** Foto pública tal como la consume la UI (sin campos internos de moderación). */
+export interface MichiPhotoView {
+  id: string;
+  file: string;
+  catName: string;
+  note: string;
+  hearts: number;
+  breedSlug: string;
+  breedName: string;
+  width: number;
+  height: number;
 }

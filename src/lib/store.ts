@@ -32,7 +32,12 @@ async function readAll(): Promise<Photo[]> {
   try {
     const raw = await fs.readFile(DB_FILE, 'utf8');
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as Photo[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    // Normaliza registros antiguos sin campo hearts.
+    return (parsed as Photo[]).map((p) => ({
+      ...p,
+      hearts: typeof p.hearts === 'number' ? p.hearts : 0,
+    }));
   } catch {
     return [];
   }
@@ -78,6 +83,7 @@ export async function createPhoto(input: CreatePhotoInput): Promise<Photo> {
     width: input.width,
     height: input.height,
     status: 'pending',
+    hearts: 0,
     createdAt: new Date().toISOString(),
   };
 
@@ -113,6 +119,22 @@ export async function setStatus(
   photo.status = status;
   await writeAll(all);
   return photo;
+}
+
+/**
+ * Ajusta los corazones de una foto (+1 / -1), sin bajar de 0. Devuelve el nuevo
+ * total o null si la foto no existe o no está aprobada.
+ */
+export async function adjustHearts(
+  id: string,
+  delta: number,
+): Promise<number | null> {
+  const all = await readAll();
+  const photo = all.find((p) => p.id === id);
+  if (!photo || photo.status !== 'approved') return null;
+  photo.hearts = Math.max(0, (photo.hearts ?? 0) + delta);
+  await writeAll(all);
+  return photo.hearts;
 }
 
 /** Lee el binario de una foto desde disco. */
