@@ -32,10 +32,13 @@ export function HeartButton({
   photoId,
   initialHearts,
   size = 'sm',
+  onChange,
 }: {
   photoId: string;
   initialHearts: number;
   size?: 'sm' | 'lg';
+  /** Se llama con el nuevo total para que el padre (grid) lo refleje al instante. */
+  onChange?: (hearts: number) => void;
 }) {
   const [hearts, setHearts] = useState(initialHearts);
   const [hearted, setHearted] = useState(false);
@@ -49,9 +52,11 @@ export function HeartButton({
     if (busy) return;
     const next = !hearted;
     const action = next ? 'add' : 'remove';
-    // Optimista.
+    // Optimista: actualiza al instante local y avisa al padre.
+    const optimistic = Math.max(0, hearts + (next ? 1 : -1));
     setHearted(next);
-    setHearts((h) => Math.max(0, h + (next ? 1 : -1)));
+    setHearts(optimistic);
+    onChange?.(optimistic);
     setBusy(true);
 
     const stored = readHearted();
@@ -68,10 +73,12 @@ export function HeartButton({
       const data: { ok?: boolean; hearts?: number } = await res.json();
       if (!res.ok || !data.ok || typeof data.hearts !== 'number') throw new Error();
       setHearts(data.hearts); // sincroniza con el total real del servidor
+      onChange?.(data.hearts);
     } catch {
       // Revierte en caso de error.
       setHearted(!next);
-      setHearts((h) => Math.max(0, h + (next ? -1 : 1)));
+      setHearts(hearts);
+      onChange?.(hearts);
       const revert = readHearted();
       if (next) revert.delete(photoId);
       else revert.add(photoId);

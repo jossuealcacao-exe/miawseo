@@ -17,12 +17,14 @@ export function Lightbox({
   showBreed = false,
   onClose,
   onNavigate,
+  onHeart,
 }: {
   photos: MichiPhotoView[];
   index: number;
   showBreed?: boolean;
   onClose: () => void;
   onNavigate: (nextIndex: number) => void;
+  onHeart?: (id: string, hearts: number) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const photo = photos[index];
@@ -118,7 +120,13 @@ export function Lightbox({
             {showBreed && <span className="lightbox__breed">{photo.breedName}</span>}
             {photo.note ? <p className="lightbox__note">{photo.note}</p> : null}
           </div>
-          <HeartButton photoId={photo.id} initialHearts={photo.hearts} size="lg" />
+          <HeartButton
+            key={photo.id}
+            photoId={photo.id}
+            initialHearts={photo.hearts}
+            size="lg"
+            onChange={(h) => onHeart?.(photo.id, h)}
+          />
         </figcaption>
       </figure>
     </div>

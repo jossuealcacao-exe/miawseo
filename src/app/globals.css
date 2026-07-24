@@ -1322,7 +1322,8 @@ h3 {
     color var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
 }
 .heart-btn svg {
-  color: var(--text-muted);
+  /* El corazón siempre visible en rojo: contorno si no lo has dado, relleno si sí. */
+  color: var(--heart);
   transition: color var(--motion-fast) var(--ease), transform var(--motion-fast) var(--ease);
 }
 .heart-btn:hover {

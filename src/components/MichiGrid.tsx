@@ -18,13 +18,20 @@ export function MichiGrid({
   showBreed?: boolean;
 }) {
   const [open, setOpen] = useState<number | null>(null);
+  // Ajustes de corazones de esta sesión (id -> total), para reflejar al instante
+  // lo que el visitante da sin recargar. Se superponen sobre el dato del servidor.
+  const [hearts, setHearts] = useState<Record<string, number>>({});
 
   if (photos.length === 0) return null;
+
+  const view = photos.map((p) =>
+    hearts[p.id] != null ? { ...p, hearts: hearts[p.id]! } : p,
+  );
 
   return (
     <>
       <ul className="michi-grid" role="list">
-        {photos.map((p, i) => (
+        {view.map((p, i) => (
           <li key={p.id}>
             <button
               type="button"
@@ -55,11 +62,12 @@ export function MichiGrid({
 
       {open !== null && (
         <Lightbox
-          photos={photos}
+          photos={view}
           index={open}
           showBreed={showBreed}
           onClose={() => setOpen(null)}
           onNavigate={setOpen}
+          onHeart={(id, h) => setHearts((m) => ({ ...m, [id]: h }))}
         />
       )}
     </>
