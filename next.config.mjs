@@ -1,7 +1,13 @@
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Fija el root de file-tracing a esta carpeta. Evita que Next infiera un root
+  // equivocado si existe otro lockfile en un directorio superior.
+  outputFileTracingRoot: dirname(fileURLToPath(import.meta.url)),
   async headers() {
     // CSP compatible con generación estática (SSG).
     //
