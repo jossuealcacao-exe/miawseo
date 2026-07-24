@@ -1831,6 +1831,67 @@ dialog.modal::backdrop {
   font-weight: 700;
 }
 
+/* Banner de consentimiento de cookies (GA) */
+.consent {
+  position: fixed;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-left: var(--edge) solid var(--line-color);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.consent__text {
+  margin: 0;
+  flex: 1 1 320px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.consent__text strong {
+  color: var(--text-strong);
+}
+.consent__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex: none;
+}
+.consent__btn {
+  font-family: inherit;
+  font-size: var(--fs-label);
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  border: 1px solid var(--border-strong);
+  transition: border-color var(--motion-fast) var(--ease),
+    background var(--motion-fast) var(--ease);
+}
+.consent__btn--ghost {
+  background: transparent;
+  color: var(--text);
+}
+.consent__btn--ghost:hover {
+  border-color: var(--text-muted);
+}
+.consent__btn--accept {
+  background: var(--go);
+  border-color: var(--go);
+  color: #fff;
+}
+.consent__btn--accept:hover {
+  filter: brightness(1.08);
+}
+
 /* Utilidad: fila de acciones */
 .actions {
   display: flex;
