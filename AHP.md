@@ -1,143 +1,136 @@
 # AHP — Agent Handoff Protocol
 
 ## Identidad
-- Proyecto: **Miawseo** — museo inmersivo de razas felinas con muro público moderado.
-- Origen: Claude Code (Web Architect OS 2.0, modo BUILD).
-- Destino: cualquier agente/dev que continúe el proyecto.
-- Fecha: 2026-07-22.
-- Estado: **READY_FOR_QA → COMPLETED** (build + QA funcional pasados).
+- Proyecto: **Miawseo** — museo inmersivo de razas felinas con muro público moderado. En vivo en **https://michimuseum.com**.
+- Origen: Claude Code (Web Architect OS 2.0; BUILD inicial + múltiples iteraciones de diseño, comunidad, despliegue y SEO/analytics).
+- Destino: cualquier agente/dev que continúe o migre el proyecto a una nueva versión del sistema web.
+- Fecha: 2026-07-24.
+- Estado: **COMPLETED / EN PRODUCCIÓN** (build verde, desplegado en Railway, dominio propio activo).
 
 ## Objetivo activo
-Sitio tipo galería de arte donde se recorren razas de gato (Michiteca), cada una
-con su slideshow-exposición y un botón "Yo tengo uno" para subir la foto del
-gato del usuario, que tras moderación vive en la Michi Plaza (muro público por
-raza). Front + back con candados anti-abuso.
+Galería inmersiva donde se recorren razas de gato como una **red de metro** (Michiteca) y la comunidad cuelga fotos reales de sus michis en un **muro público moderado** (Michi Plaza), con reacciones de corazón. Front + back monolítico con candados anti-abuso. Portafolio personal.
 
 ## Contexto mínimo
 - Idioma UI: español (es-MX).
-- Dirección visual: **Minimal Metro UX** — señalética de metro sobre andén
-  oscuro (paneles azul/verde/rojo, pictogramas en chips, wayfinding con flechas,
-  sans tipo transporte). Ver `DESIGN_MINIMAL_METRO.md`. Iconos en
-  `src/components/Icon.tsx`; tokens en `src/app/globals.css`.
-- El contenido de razas es divulgación general (fuente de verdad en
-  `src/data/breeds.ts`).
+- Dirección visual: **Minimal Metro UX** — señalética de metro sobre andén oscuro; líneas de color, wayfinding con flechas, chips, tipografía sans tipo transporte, esquinas rectas. Spec en `DESIGN_MINIMAL_METRO.md` (proyecto) y `_web-os/reference/DESIGN-SYSTEM-MINIMAL-METRO.md` (SO). Tokens en `src/app/globals.css` (4 capas); iconos inline en `src/components/Icon.tsx`.
+- Michiteca organizada en **líneas**: **M1 "Razas"** (20 estaciones, lila `--m1:#7c3aed`), **M2 "Michis y humanos"** (8 estaciones históricas cronológicas, azul `--m2`, cada una con galería de 3 imágenes en `/historia/[slug]`), **M3** ("en obras", gris).
+- Contenido de razas e historia = divulgación general.
 
 ## Fuente de verdad
-- Contenido curatorial: `src/data/breeds.ts` (8 razas, slides por sala).
-- Datos de usuarios: `.data/photos.json` + `.data/uploads/` (local, no versionado).
+- Contenido curatorial de razas: `src/data/breeds.ts` (20 razas, slides por sala).
+- Contenido histórico M2: `src/data/history.ts` (8 estaciones + galerías).
+- Datos de usuarios (fotos + corazones): `photos.json` + `uploads/` dentro de `DATA_DIR` (volumen persistente en prod; `.data/` local, no versionado).
+- URL pública / marca: `src/lib/site.ts` (`SITE_URL`, `SITE_NAME`).
 
 ## Arquitectura
-- **Next.js 15.1.6 (App Router) + TypeScript estricto**, monolito full-stack.
-- Perfil SELF_CONTAINED: sin servicios externos ni secretos en runtime.
-- Render: fichas de raza SSG (`generateStaticParams`); michiteca/michi-plaza y APIs
-  dinámicas (`force-dynamic` / route handlers node runtime).
-- Persistencia: filesystem local con escritura serializada (tmp + rename).
+- **Next.js 15.5.21 (App Router) + TypeScript estricto**, monolito full-stack, React 19.
+- Perfil SELF_CONTAINED: sin BD ni servicios externos en runtime; solo GA4 opcional en cliente.
+- Render: fichas de raza (`/michiteca/[breed]`) e historia (`/historia/[slug]`) son **SSG** (`generateStaticParams`); Michiteca, Michi Plaza y las APIs son **dinámicas** (`force-dynamic`, node runtime).
+- Persistencia: filesystem en `DATA_DIR` (default `process.cwd()/.data`; en prod `/data`), escritura serializada (tmp + rename).
+- Imágenes de razas/historia: Wikimedia Commons vía `upload.wikimedia.org` (permitido en CSP). Fotos de usuarios servidas por API solo si aprobadas.
 
 ## Decisiones confirmadas
-- Imágenes servidas por API (`/api/media/[file]`) solo si `status === approved`;
-  los binarios NO viven en `/public` → la moderación es el candado real.
-- Validación de imagen por magic bytes + dimensiones, sin dependencias nativas.
-- Rate limit en memoria por IP; honeypot + tiempo mínimo; consentimiento
-  obligatorio.
-- Moderación con token único (`ADMIN_TOKEN`) en `/admin`.
+- Imágenes de usuarios servidas por `/api/media/[file]` **solo si `status === approved`**; binarios NO viven en `/public` → la moderación es el candado real.
+- Validación de imagen por magic bytes + dimensiones, sin dependencias nativas para subir.
+- Rate limit en memoria por IP (parametrizable); honeypot + tiempo mínimo + consentimiento obligatorio en subida.
+- Moderación con token único `ADMIN_TOKEN` en `/admin` + `/api/admin` (timingSafeEqual).
+- **Corazones**: `/api/photos/heart` (add/remove), rate limit propio (60/min); "1 por navegador" vía `localStorage` (`miawseo:hearts`); optimista + propagación inmediata al grid; corazón **relleno rojo sólido** siempre (visibilidad). Total por foto en `Photo.hearts`.
+- **CSP** sin nonce (compatible con SSG): `script-src 'self' 'unsafe-inline'` (+`'unsafe-eval'` dev) + googletagmanager; `img-src`/`connect-src` incluyen Wikimedia y Google Analytics. En `next.config.mjs`.
+- **Analytics**: GA4 (`G-CX08FFS75C`) vía `next/script`, **solo en producción** y **solo tras aceptar** el banner de consentimiento (`src/components/Analytics.tsx`, `localStorage: miawseo:consent`).
+- **SEO**: `SITE_URL` como fuente única (metadataBase, sitemap con rutas de historia, robots con Host, OG/Twitter, JSON-LD WebSite, canonical por página en detalle). Favicon `app/icon.svg` (roundel) y OG `app/opengraph-image.png` (1200×630 de marca).
+- **Despliegue Opción B** (disco persistente): `DATA_DIR` configurable; `render.yaml` + `railway.json` versionados; `outputFileTracingRoot` fija el root ante múltiples lockfiles; `engines.node >=20`.
 
 ## Estado
 ### Completado
-- Home hero (2 CTAs), Michiteca (grid + buscador), exposición por raza
-  (slideshow accesible + "Yo tengo uno"), Michi Plaza índice y por raza, /nosotros,
-  /admin (moderación), 404, robots, sitemap.
-- Backend: upload, media gating, admin list/approve/reject.
-- 6 candados anti-abuso + cabeceras de seguridad (CSP, etc.).
-- QA: typecheck, lint, build de producción, y pruebas funcionales de API/flujo.
+- Home: hero con imagen "mesh" (placeholder Wikimedia; ver Pendiente), explicativo "Cómo funciona la red" (líneas→estaciones→andén), señales Michiteca (M1) / Michi Plaza, bloque **Arenero** (donaciones, `mailto:jossue.alcala@bloqio.app`), autoría "Jossué Alcalá" en footer.
+- Michiteca: buscador + líneas M1/M2/M3; fichas de raza (slideshow por salas, quick-facts, navegación entre estaciones); páginas de historia M2 con `PeriodGallery`.
+- Michi Plaza: **muro grid** (`PhotoWall`) con filtro de razas y orden por corazones; **Lightbox** accesible (imagen completa, mensaje, corazón, teclado ESC/flechas); grid reutilizado en la ficha de raza (`BreedMichis`, hasta 12).
+- Backend: upload con 6 candados, media gating, admin list/approve/reject, corazones.
+- Producción: repo GitHub, deploy en Railway con volumen `/data`, dominio `michimuseum.com` (Cloudflare, CNAME flattening, proxied). Next actualizado a 15.5.21 por CVEs; overrides postcss/sharp.
+- SEO + favicon + OG image + GA4 con consentimiento.
 ### En progreso
 - (ninguno)
 ### Pendiente (mejoras, no bloqueantes)
-- Re-codificar imágenes con `sharp` para **eliminar EXIF** y normalizar tamaños.
-- Sustituir rate limiter/persistencia por Redis + BD + object storage para
-  producción multi-instancia.
-- Roles de usuario reales para moderación; posible pre-filtro automático de
-  contenido.
-- Paginación del muro y de la cola de moderación a volumen alto.
+- **Stripping de EXIF** + resize con `sharp` en `/api/upload` (aún NO hecho; `sharp` ya está instalado). Prioridad de privacidad.
+- Sustituir persistencia FS y rate limit en memoria por object storage + BD + Redis para multi-instancia.
+- Sustituir la imagen "mesh" del hero (placeholder Wikimedia) por la imagen IA definitiva: dejar `public/hero-michis.jpg` y cambiar `HERO_IMG` en `src/app/page.tsx`.
+- Roles de moderación reales; paginación del muro y la cola a volumen alto; backups de `DATA_DIR`.
+- Verificar `sitemap.xml` en Google Search Console.
 
 ## Repositorio
-- Ruta: `/Users/eljochuaxd/Web-Architect-OS-Claude-Code-Ready-v2.0.0/miawseo`
-- Rama: N/A (carpeta contenedora **no** es repo Git; no se inicializó por regla
-  de no publicar/no tocar VCS sin autorización).
-- Último commit: N/A.
-- Working tree: proyecto nuevo, `.data/` limpiado tras QA.
-- Comandos ejecutados: `npm install`, `npm run typecheck`, `npm run lint`,
-  `npm run build`, `npm run start` (QA en :3100).
+- Ruta: `/Users/eljochuaxd/Web-Architect-OS-Claude-Code-Ready-v2.0.0/miawseo` (repo Git aislado; el HOME es otro repo accidental que NO se toca).
+- Remoto: `https://github.com/jossuealcacao-exe/miawseo.git`
+- Rama: `main`.
+- Último commit: `3e7eb97` — "fix(corazones): corazón siempre relleno en el botón para visibilidad".
+- Working tree: limpio (`.data/` gitignored con datos de prueba locales; NO va a prod).
+- Comandos usados: `npm install`, `npm run typecheck`, `npm run lint`, `npm run build`, `npm run start` / `start:prod-preview` (:3200). Flujo estándar ante `.next` corrupto: detener dev → `rm -rf .next` → build/dev.
 
-## Archivos
+## Variables de entorno (Railway / prod)
+| Variable | Requerida | Uso |
+|---|---|---|
+| `ADMIN_TOKEN` | **Sí** | Panel `/admin` y `/api/admin`. Sin ella cae a `dev-moderacion` (inseguro). |
+| `DATA_DIR` | Sí (prod) | Carpeta de datos persistentes; en Railway `=/data` con volumen montado ahí. |
+| `NEXT_PUBLIC_SITE_URL` | No | Default `https://michimuseum.com`. |
+| `NEXT_PUBLIC_GA_ID` | No | Default `G-CX08FFS75C`. |
+| `UPLOAD_RATE_MAX` / `UPLOAD_RATE_WINDOW_MS` | No | Límite de subidas por IP. |
+
+## Archivos (clave; nuevos/modificados en esta fase)
 | Ruta | Estado | Función | Observaciones |
 |---|---|---|---|
-| `src/app/layout.tsx` | nuevo | Layout, metadata, skip-link | lang=es, tema oscuro |
-| `src/app/page.tsx` | nuevo | Home hero + pasos | 2 CTAs |
-| `src/app/michiteca/page.tsx` | nuevo | Grid + buscador | force-dynamic (counts) |
-| `src/app/michiteca/[breed]/page.tsx` | nuevo | Exposición/slideshow | SSG |
-| `src/app/michi-plaza/page.tsx` | nuevo | Índice del muro | force-dynamic |
-| `src/app/michi-plaza/[breed]/page.tsx` | nuevo | Muro por raza | solo aprobadas |
-| `src/app/nosotros/page.tsx` | nuevo | Sobre el museo + reglas | — |
-| `src/app/admin/page.tsx` | nuevo | Moderación (client) | token en header |
-| `src/app/api/upload/route.ts` | nuevo | Subida con candados | node runtime |
-| `src/app/api/media/[file]/route.ts` | nuevo | Sirve imágenes aprobadas | gating |
-| `src/app/api/admin/route.ts` | nuevo | List/approve/reject | timingSafeEqual |
-| `src/lib/validation.ts` | nuevo | Magic bytes + dims + sanitizar | sin deps |
-| `src/lib/store.ts` | nuevo | Persistencia JSON+fs | escritura serializada |
-| `src/lib/ratelimit.ts` | nuevo | Rate limit por IP | en memoria |
-| `src/data/breeds.ts` | nuevo | Contenido de razas | fuente de verdad |
-| `src/components/*` | nuevo | Header, Footer, Portrait, Search, Slideshow, UploadDialog | — |
-| `src/app/globals.css` | nuevo | Tokens 4 capas + estilos | — |
+| `src/app/page.tsx` | mod | Home hero mesh + red + Arenero | `HERO_IMG` placeholder |
+| `src/app/layout.tsx` | mod | Metadata SEO, OG/Twitter, JSON-LD, Analytics | metadataBase=SITE_URL |
+| `src/app/michi-plaza/page.tsx` | mod | Muro grid (PhotoWall) | reemplaza línea de razas |
+| `src/app/michi-plaza/[breed]/page.tsx` | mod | Muro filtrado por raza | reusa PhotoWall |
+| `src/app/api/photos/route.ts` | mod | Lista fotos (límite 12, +hearts) | por raza |
+| `src/app/api/photos/heart/route.ts` | nuevo | +/- corazón | rate limit propio |
+| `src/lib/store.ts` | mod | Persistencia + `hearts` + `adjustHearts` | `DATA_DIR` |
+| `src/lib/site.ts` | nuevo | `SITE_URL` / `SITE_NAME` | fuente única |
+| `src/lib/types.ts` | mod | `Photo.hearts`, `MichiPhotoView` | — |
+| `src/components/PhotoWall.tsx` | nuevo | Filtro razas + grid | orden por corazones |
+| `src/components/MichiGrid.tsx` | nuevo | Grid uniforme + lightbox | propagación de corazones |
+| `src/components/Lightbox.tsx` | nuevo | Visor modal accesible | ESC/flechas, foco |
+| `src/components/HeartButton.tsx` | nuevo | Reacción + contador | optimista, localStorage |
+| `src/components/BreedMichis.tsx` | mod | Comunidad en ficha de raza | usa MichiGrid |
+| `src/components/Analytics.tsx` | nuevo | Consentimiento + GA4 | prod + tras aceptar |
+| `src/components/Icon.tsx` | mod | +`heart`, `heart-fill`, `donate` | — |
+| `src/app/icon.svg` | nuevo | Favicon (roundel Miawseo) | — |
+| `src/app/opengraph-image.png` | nuevo | OG 1200×630 de marca | — |
+| `src/app/sitemap.ts` / `robots.ts` | mod | SITE_URL + rutas historia | — |
+| `next.config.mjs` | mod | CSP (+GA), outputFileTracingRoot | — |
+| `render.yaml` / `railway.json` | nuevo | Config despliegue Opción B | volumen /data |
 
 ## QA
-- Typecheck: **PASS** (`tsc --noEmit`, strict + noUncheckedIndexedAccess).
-- Lint: **PASS** (`next/core-web-vitals`, 0 warnings).
-- Tests: no hay suite unitaria (proporcional; QA funcional por API en su lugar).
-- Build: **PASS** (18 rutas, 0 warnings tras corrección de autoprefixer).
-- Funcional (curl en prod :3100): rutas 200/404 correctas; 6 candados de subida
-  bloquean; flujo pending→404, aprobar→media 200, rechazar→404; admin 401 sin
-  token; path traversal→404; cabeceras de seguridad presentes.
-- Visual (navegador): **EJECUTADO** vía `preview_start` (dev :3000 y prod :3200).
-  Verificado: home, Michiteca, exposición/slideshow (flechas avanzan de sala,
-  dots), modal "Yo tengo uno" (abre con clic real), Michi Plaza, responsive móvil
-  375px, hidratación (12/12 botones con fiber de React) en dev y prod.
-- **Bug encontrado y corregido durante QA visual:** la CSP inicial
-  (`script-src 'self'`) bloqueaba los scripts inline de arranque de Next →
-  la página NO hidrataba (botones muertos). Intento con nonce+middleware falló
-  en prod por incompatibilidad de nonce con SSG. Solución final: CSP sin nonce
-  compatible con estático (`script-src 'self' 'unsafe-inline'`, +`'unsafe-eval'`
-  solo en dev), en `next.config.mjs`. Middleware eliminado.
-- Accessibility: semántica + landmarks + skip-link + foco + reduced-motion en
-  código; falta auditoría con lector de pantalla real.
-- Performance: First Load JS ~105–112 kB (dentro de presupuesto); sin medición
-  de campo (LCP/INP/CLS) por falta de preview visual real.
+- Typecheck: **PASS** (`tsc --noEmit`, strict).
+- Lint: **PASS** (`next lint`, 0 warnings; aviso de deprecación de `next lint` en Next 16, no bloquea).
+- Tests: sin suite unitaria (proporcional; QA funcional/visual en su lugar).
+- Build: **PASS** (compila; SSG de razas/historia; rutas dinámicas y estáticas correctas).
+- Visual: **EJECUTADO** en dev (:3000), preview de prod (:3200) y **producción en vivo** (`michimuseum.com`). Verificado: muro grid uniforme, filtro por raza, lightbox (foto completa, corazón), corazones inmediatos (lightbox + badge del grid), banner de consentimiento (GA solo tras aceptar), OG/robots/sitemap con dominio real, favicon.
+- Accessibility: semántica, landmarks, skip-link, foco, teclado en lightbox, reduced-motion en código; falta auditoría con lector real.
+- Performance: First Load JS ~103–120 kB (dentro de presupuesto); sin métricas de campo.
 
 ## Bugs y limitaciones
-- EXIF de las imágenes **no se elimina** (no se re-codifica). Ver Pendiente.
-- Rate limit y persistencia son por proceso/FS (no multi-instancia).
+- **EXIF NO se elimina** en subidas (pendiente `sharp`).
+- Persistencia y rate limit por proceso/volumen único (no multi-instancia).
 - Moderación con un solo token (sin roles).
+- Hero usa foto placeholder de Wikimedia (no la imagen IA definitiva).
+- Bug de despliegue resuelto: el dominio custom apuntaba a puerto 3200 (preview local) → 502; se corrigió re-agregando el dominio en Railway para que autodetecte el puerto del `$PORT`.
 
 ## Supuestos
-- 8 razas iniciales son suficientes para el alcance; ampliables en `breeds.ts`.
-- Retratos SVG generativos sustituyen fotografía licenciada para evitar
-  dependencias de imágenes externas y respetar la CSP.
-- Puerto de dev 3000; QA se hizo en 3100 para no colisionar.
+- 20 razas (M1) y 8 estaciones (M2) son suficientes para el alcance; ampliables en `breeds.ts` / `history.ts`.
+- El Measurement ID de GA es público (va en el HTML), por eso vive en cliente.
+- Corazones "1 por navegador" es aceptable sin autenticación (guardado en localStorage; el total lo persiste el servidor).
 
 ## Riesgos
-- Contenido público subido por usuarios: mitigado con moderación previa; revisar
-  textos legales/consentimiento con asesoría antes de producción real.
-- Sin backups automáticos de `.data/`.
+- Contenido subido por usuarios: mitigado con moderación previa; revisar textos legales/consentimiento y aviso de privacidad (GA/cookies) con asesoría antes de escalar.
+- Sin backups automáticos del volumen `DATA_DIR`.
 
 ## Próxima acción exacta
-Si se pasa a producción: (1) integrar `sharp` para strip EXIF + resize en
-`/api/upload`; (2) mover persistencia y rate limit a servicios gestionados;
-(3) definir `ADMIN_TOKEN` fuerte y, si aplica, roles.
+1. Integrar `sharp` en `/api/upload` para **strip EXIF + resize** (privacidad + tamaños uniformes).
+2. (Opcional) migrar a Bucket S3 de Railway u object storage + BD si crece el volumen.
+3. Sustituir imagen del hero por la IA definitiva.
 
 ## Criterio de terminado
-Build de producción verde + flujo completo subir→moderar→publicar funcionando y
-candados anti-abuso activos. **Cumplido.**
+Sitio en producción con dominio propio, flujo subir→moderar→publicar operativo, muro con lightbox y corazones inmediatos, SEO/analytics con consentimiento y build verde. **Cumplido.**
 
 ## Instrucción al receptor
-Continúa desde el estado descrito. Verifica el repo, no repitas trabajo ni
-reviertas decisiones sin declararlo. `npm install && npm run dev`; para moderar,
-copia `.env.example` a `.env.local` y define `ADMIN_TOKEN`.
+Continúa desde el estado descrito. Verifica el repo (`git log`, `git status`) y no repitas trabajo ni reviertas decisiones sin declararlo. Local: `npm install && npm run dev`; para moderar copia `.env.example` a `.env.local` y define `ADMIN_TOKEN`. Producción: Railway (Node + volumen `/data`, `DATA_DIR=/data`), dominio vía Cloudflare. Ante `.next` corrupto: detener dev → `rm -rf .next` → build/dev.

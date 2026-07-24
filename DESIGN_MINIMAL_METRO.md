@@ -96,3 +96,21 @@ mantienen. El sistema no depende de imágenes externas (retratos y pictogramas s
 - Botones de navegación entre estaciones con **kickers metro** (jerarquía menor):
   "Próxima estación"/"Estación anterior" e indicador **Inicio/Fin de línea**.
 - Iconos de sección: **cat-6** (Michiteca) y **cat-5** (Michi Plaza), tamaño mayor.
+
+## Muro, lightbox y reacciones (v6)
+> Supera el "carrusel de michis máx 6" de v3: la comunidad ahora es un **grid** con lightbox y corazones.
+
+- **Token nuevo:** `--heart #ff4d6d` (rojo de reacción, constante, no depende de la línea).
+- **Michi Plaza = muro grid** (`PhotoWall` → `MichiGrid`), no la línea de razas: miniaturas cuadradas uniformes (`.michi-cell`, `object-fit: cover`, aspect 1/1), badge de corazones (`.michi-cell__hearts`, relleno rosa) y nombre/raza en overlay inferior. Ordenado por corazones (lo más querido sube).
+- **Filtro de razas** arriba (`.filter-chip`, activo en lila `--m1` con conteo). Chip de filtro ≠ `.chip` (recuadro de icono); es una píldora de texto propia.
+- **Lightbox** (`.lightbox*`): visor modal accesible (rol dialog, foco al abrir, `ESC`/flechas, bloqueo de scroll, click en backdrop cierra). Imagen completa sin recorte (`object-fit: contain`), nombre, raza (lila), mensaje y botón de corazón grande.
+- **Corazón** (`.heart-btn` + `HeartButton`): **relleno rojo sólido siempre** para que se vea claro (el contorno se veía tenue en móvil); el estado "ya lo diste" se distingue por **borde rojo + escala** (`.is-active`) y el conteo en rojo. Optimista y con propagación inmediata al badge del grid; "1 por navegador" en `localStorage`.
+- La ficha de raza reutiliza el mismo grid+lightbox (`BreedMichis`), hasta **12** michis.
+
+## Home, identidad y producción (v6)
+- **Hero "mesh":** foto de fondo difuminada con máscara radial + velo que se funde con el andén (`.hero__media` + `.hero::after`); imagen intercambiable vía `HERO_IMG` en `page.tsx`.
+- **Explicativo de la red:** "Líneas, estaciones y andenes" (líneas agrupan estaciones; cada estación tiene su andén).
+- **Arenero** (`.arenero`, variante `.wayfind--ink`): bloque secundario de donaciones/contacto con **badge dorado** en esquina (`.arenero__badge`, `--c-yellow`), título+sub como las señales, `mailto:` de contacto. Jerarquía menor que M1/Michi Plaza.
+- **Autoría** en footer (`.footer-credit`).
+- **Consentimiento** (`.consent` + `Analytics`): banner inferior estilo metro (Aceptar/Rechazar); Google Analytics **solo carga tras aceptar** y **solo en producción**.
+- **Identidad de marca:** favicon `app/icon.svg` (roundel gato rojo) y Open Graph `app/opengraph-image.png` (1200×630 de marca). SEO centralizado en `src/lib/site.ts` (`SITE_URL`), con OG/Twitter/JSON-LD y sitemap que incluye la línea M2.
