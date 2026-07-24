@@ -19,6 +19,9 @@ export function SiteFooter() {
             Museo inmersivo de razas felinas. Contenido curatorial de
             divulgación; no sustituye la orientación veterinaria.
           </p>
+          <p className="footer-credit">
+            Proyecto interactivo creado por <strong>Jossué Alcalá</strong>.
+          </p>
         </div>
         <nav aria-label="Rutas del sitio" style={{ display: 'grid', gap: '0.5rem' }}>
           <Link href="/michiteca">Michiteca</Link>

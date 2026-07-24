@@ -56,6 +56,24 @@ export default function HomePage() {
               <Icon name="arrow" size={26} className="wayfind__arrow" />
             </Link>
           </div>
+
+          <a
+            className="wayfind wayfind--ink arenero"
+            href="mailto:jossuealcala@bloqio.app?subject=Galer%C3%ADa%20Miawseo%20para%20mi%20michi"
+          >
+            <span className="chip" aria-hidden="true">
+              <Icon name="donate" size={30} />
+            </span>
+            <span className="wayfind__label">
+              <span className="arenero__kicker">Donaciones al proyecto</span>
+              <span className="wayfind__title">Arenero</span>
+              <span className="arenero__sub">
+                ¿Quieres una galería para tu michi? Contáctame:{' '}
+                <strong>jossuealcala@bloqio.app</strong>
+              </span>
+            </span>
+            <Icon name="arrow" size={24} className="wayfind__arrow" />
+          </a>
         </div>
       </section>
 

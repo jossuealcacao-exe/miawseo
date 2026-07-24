@@ -459,6 +459,39 @@ h3 {
   opacity: 0.95;
 }
 
+/* Arenero — bloque secundario de donaciones/contacto (jerarquía menor que las
+   señales principales): superficie apagada, acento dorado, texto compacto. */
+.arenero {
+  margin-top: var(--space-4);
+}
+.arenero .wayfind__label {
+  text-align: left;
+}
+.arenero .chip {
+  color: var(--c-yellow);
+}
+.arenero .wayfind__title {
+  font-size: 1.15rem;
+}
+.arenero__kicker {
+  font-size: var(--fs-caption);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--c-yellow);
+}
+.arenero__sub {
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text);
+}
+.arenero__sub strong {
+  color: var(--text-strong);
+  font-weight: 700;
+  word-break: break-word;
+}
+
 /* ---------- Hero (entrada de estación) ---------- */
 .hero {
   position: relative;
@@ -1791,6 +1824,15 @@ dialog.modal::backdrop {
 }
 .site-footer a:hover {
   color: var(--line-color);
+}
+.footer-credit {
+  margin: var(--space-3) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+.footer-credit strong {
+  color: var(--text);
+  font-weight: 700;
 }
 
 /* Utilidad: fila de acciones */
