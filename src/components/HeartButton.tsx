@@ -98,7 +98,9 @@ export function HeartButton({
         hearted ? 'Quitar corazón' : 'Dar corazón a este michi'
       }
     >
-      <Icon name={hearted ? 'heart-fill' : 'heart'} size={size === 'lg' ? 24 : 18} />
+      {/* Siempre relleno para que el corazón se vea claro; el estado "ya lo diste"
+          se distingue por el borde/escala del botón (.is-active). */}
+      <Icon name="heart-fill" size={size === 'lg' ? 24 : 18} />
       <span className="heart-btn__count">{hearts}</span>
     </button>
   );
