@@ -459,37 +459,33 @@ h3 {
   opacity: 0.95;
 }
 
-/* Arenero — bloque secundario de donaciones/contacto (jerarquía menor que las
-   señales principales): superficie apagada, acento dorado, texto compacto. */
+/* Arenero — bloque secundario de donaciones/contacto (jerarquía menor: superficie
+   apagada). El badge "Donaciones al proyecto" va en la esquina superior izquierda;
+   debajo, la fila chip · título · sub queda idéntica a las señales principales. */
 .arenero {
   margin-top: var(--space-4);
-}
-.arenero .wayfind__label {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
   text-align: left;
+}
+.arenero__badge {
+  align-self: flex-start;
+  padding: 3px 8px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--c-yellow);
+  border: 1px solid color-mix(in srgb, var(--c-yellow) 40%, transparent);
+}
+.arenero__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 .arenero .chip {
   color: var(--c-yellow);
-}
-.arenero .wayfind__title {
-  font-size: 1.15rem;
-}
-.arenero__kicker {
-  font-size: var(--fs-caption);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--c-yellow);
-}
-.arenero__sub {
-  font-size: 0.9rem;
-  font-weight: 500;
-  line-height: 1.4;
-  color: var(--text);
-}
-.arenero__sub strong {
-  color: var(--text-strong);
-  font-weight: 700;
-  word-break: break-word;
 }
 
 /* ---------- Hero (entrada de estación) ---------- */

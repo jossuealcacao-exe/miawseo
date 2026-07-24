@@ -59,20 +59,19 @@ export default function HomePage() {
 
           <a
             className="wayfind wayfind--ink arenero"
-            href="mailto:jossuealcala@bloqio.app?subject=Galer%C3%ADa%20Miawseo%20para%20mi%20michi"
+            href="mailto:jossue.alcala@bloqio.app?subject=Galer%C3%ADa%20Miawseo%20para%20mi%20michi"
           >
-            <span className="chip" aria-hidden="true">
-              <Icon name="donate" size={30} />
-            </span>
-            <span className="wayfind__label">
-              <span className="arenero__kicker">Donaciones al proyecto</span>
-              <span className="wayfind__title">Arenero</span>
-              <span className="arenero__sub">
-                ¿Quieres una galería para tu michi? Contáctame:{' '}
-                <strong>jossuealcala@bloqio.app</strong>
+            <span className="arenero__badge">Donaciones al proyecto</span>
+            <span className="arenero__row">
+              <span className="chip" aria-hidden="true">
+                <Icon name="donate" size={30} />
               </span>
+              <span className="wayfind__label">
+                <span className="wayfind__title">Arenero</span>
+                <span className="wayfind__sub">¿Quieres una galería para tu michi?</span>
+              </span>
+              <Icon name="arrow" size={26} className="wayfind__arrow" />
             </span>
-            <Icon name="arrow" size={24} className="wayfind__arrow" />
           </a>
         </div>
       </section>
