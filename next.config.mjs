@@ -19,17 +19,22 @@ const nextConfig = {
     // sanitizan en servidor. Para una CSP estricta con nonce habría que renderizar
     // todo dinámicamente. En desarrollo se añade 'unsafe-eval' (HMR de Next).
     const isDev = process.env.NODE_ENV !== 'production';
+    // Google Analytics (gtag.js): carga el script desde googletagmanager y
+    // envía beacons a google-analytics (incluye endpoints regionales).
+    const GA = 'https://www.googletagmanager.com';
+    const GA_COLLECT =
+      'https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com';
     const scriptSrc = isDev
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-      : "script-src 'self' 'unsafe-inline'";
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${GA}`
+      : `script-src 'self' 'unsafe-inline' ${GA}`;
     const csp = [
       "default-src 'self'",
       scriptSrc,
       "style-src 'self' 'unsafe-inline'",
       // upload.wikimedia.org: fotos reales de razas (Wikimedia Commons).
-      "img-src 'self' data: blob: https://upload.wikimedia.org",
+      `img-src 'self' data: blob: https://upload.wikimedia.org ${GA} ${GA_COLLECT}`,
       "font-src 'self'",
-      "connect-src 'self'",
+      `connect-src 'self' ${GA} ${GA_COLLECT}`,
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

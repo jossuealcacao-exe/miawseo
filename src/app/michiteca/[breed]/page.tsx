@@ -24,6 +24,7 @@ export async function generateMetadata({
   return {
     title: `${data.name} — Exposición`,
     description: `${data.tagline} Origen: ${data.origin}. Recorre la exposición inmersiva de la raza ${data.name} en Miawseo.`,
+    alternates: { canonical: `/michiteca/${data.slug}` },
   };
 }
 

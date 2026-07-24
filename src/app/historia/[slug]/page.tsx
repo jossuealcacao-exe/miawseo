@@ -22,6 +22,7 @@ export async function generateMetadata({
   return {
     title: `${stop.title} — Línea M2`,
     description: `${stop.date}: ${stop.body}`,
+    alternates: { canonical: `/historia/${stop.slug}` },
   };
 }
 
